@@ -1,0 +1,17 @@
+plugins {
+    id 'java'
+}
+
+allprojects {
+    repositories {
+        mavenCentral()
+    }
+}
+
+subprojects {
+    test {
+        tasks.withType(Test) {
+            useJUnitPlatform()
+        }
+    }
+}
