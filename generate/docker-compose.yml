@@ -1,0 +1,52 @@
+version: "3.5"
+
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.1
+    ports:
+    - 2181:2181
+    networks:
+    - integration
+    restart: always
+    environment:
+      ZOOKEEPER_SERVER_ID: '1'
+      ZOOKEEPER_CLIENT_PORT: '2181'
+      ZOOKEEPER_TICK_TIME: '5000'
+      ZOOKEEPER_SYNC_LIMIT: '2'
+      ZOOKEEPER_INIT_LIMIT: '6'
+
+  kafka:
+    image: confluentinc/cp-kafka:7.4.1
+    ports:
+    - 9093:9093
+    networks:
+    - integration
+    depends_on:
+    - zookeeper
+    restart: always
+    environment:
+      KAFKA_BROKER_ID: '1'
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://kafka:9092,CONNECTIONS_FROM_HOST://localhost:9093'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'PLAINTEXT:PLAINTEXT,CONNECTIONS_FROM_HOST:PLAINTEXT'
+      KAFKA_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT'
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: '1'
+
+  kafka-topics:
+    image: confluentinc/cp-kafka:7.4.1
+    networks:
+    - integration
+    depends_on:
+    - kafka
+    entrypoint: [ '/bin/sh', '-c' ]
+    command: |
+      "
+      kafka-topics --bootstrap-server kafka:9092 --list
+      kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic example-smartdata --replication-factor 1 --partitions 3
+      kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic example-smartdata-blacklist --replication-factor 1 --partitions 1
+      kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic example-smartdata-result --replication-factor 1 --partitions 1
+      kafka-topics --bootstrap-server kafka:9092 --list
+      "
+
+networks:
+  integration:
